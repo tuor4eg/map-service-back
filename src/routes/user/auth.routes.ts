@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { SignOptions, VerifyOptions } from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 
-import User from '../models/user.model'
+import User from '../../models/user.model'
 
 export interface FastifyJWT extends FastifyInstance {
     jwt: {
@@ -36,11 +36,18 @@ async function authRoutes(fastify: FastifyJWT) {
 
       // Create JWT using fastify's built-in jwt.sign method
       const token = fastify.jwt.sign(
-        { userId: user._id, role: user.role },
+        { userId: user.email, role: user.role },
         { expiresIn: '1h' }
       )
 
-      return reply.send({ token })
+      return reply.setCookie('authToken', token, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7
+      })
+      .send({ message: 'Login successful', user: { id: user._id, role: user.role, email: user.email, name: user.name } })
     } catch (error) {
       return reply.status(500).send({ error: 'Internal server error' })
     }

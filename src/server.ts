@@ -1,51 +1,85 @@
 'use strict'
 
-import Fastify from 'fastify'
+import Fastify, {
+    FastifyRegister,
+    FastifyReply,
+    FastifyRequest,
+    FastifyInstance
+} from 'fastify'
+import autoLoad from '@fastify/autoload'
 import fastifyCors from '@fastify/cors'
+import cookie from '@fastify/cookie'
 import mongoose from 'mongoose'
 
 import { getEnv } from './helpers/env.helper'
 
-import authRoutes, { FastifyJWT } from './routes/auth.routes'
+import authRoutes from './routes/user/auth.routes'
+import path from 'path'
 
-const fastify = Fastify({ logger: true })
+const SECRET = getEnv('JWT_SECRET', '')
+const FRONT_URL = getEnv('FRONT_URL', 'http://localhost:3000') as string
+const MONGO_URI = getEnv(
+    'MONGO_URI',
+    'mongodb://172.17.0.1:27017/map-service-db'
+) as string
+const HOST = getEnv('HOST', 'localhost') as string
+const PORT = getEnv('PORT', 3000) as number
 
-// Register JWT plugin
-fastify.register(require('fastify-jwt'), {
-    secret: getEnv('JWT_SECRET', '')
-})
+class Application {
+    protected fastify: FastifyInstance
+    constructor() {
+        this.fastify = Fastify({ logger: true })
+    }
 
-fastify.register(fastifyCors, {
-    origin: 'http://localhost:5173'
-})
+    async start() {
+        try {
+            // Register JWT plugin
+            this.fastify.register(require('@fastify/jwt'), {
+                secret: SECRET
+            })
 
-// Function to connect to MongoDB
-const connectDB = async () => {
-    try {
-        await mongoose.connect(getEnv('MONGO_URI', 'mongodb://172.17.0.1:27017/map-service-db') as string)
-        fastify.log.info('MongoDB connected...')
-    } catch (err) {
-        fastify.log.error(err)
-        process.exit(1)
+            this.fastify.register(cookie)
+
+            this.fastify.register(fastifyCors, {
+                origin: FRONT_URL,
+                credentials: true
+            })
+
+            this.fastify.register(autoLoad, {
+                dir: path.join(__dirname, `routes`),
+                matchFilter: /routes\.[^.]+$/,
+                dirNameRoutePrefix: true
+            })
+
+            await this.connectDB()
+
+            await this.fastify.listen({ port: PORT })
+
+            this.fastify.log.info(`Server is running on ${HOST}:${PORT}`)
+            console.log(this.fastify.printRoutes())
+        } catch (err) {
+            this.fastify.log.error(err)
+            process.exit(1)
+        }
+    }
+
+    async connectDB() {
+        await mongoose.connect(MONGO_URI)
+        this.fastify.log.info('MongoDB connected...')
     }
 }
-
-fastify.register(authRoutes as any)
 
 // Start server
 const start = async () => {
     try {
-        await connectDB()
-        await fastify.listen({ port: getEnv('PORT', 3000) as number })
-        fastify.log.info(`Server is running on ${getEnv('HOST', 'localhost')}: ${getEnv('PORT', 3000)}`)
-    } catch (err) {
-        fastify.log.error(err)
-        process.exit(1)
-    }
+        const app = new Application()
+
+        await app.start()
+    } catch (err) {}
 }
 
 // Export for testing
-export { fastify, connectDB }
+export { Application }
 
 if (require.main === module) {
     start()
