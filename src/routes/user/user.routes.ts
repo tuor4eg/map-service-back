@@ -147,6 +147,40 @@ async function userRoutes(fastify: FastifyInstance) {
             const { refreshToken, deviceUUID } = req.cookies as TUserCookies
 
             await fastify.clearToken(refreshToken, deviceUUID)
+
+            return {
+                message: 'Successfully logged out'
+            }
+        }
+    })
+
+    fastify.route({
+        url: '/info',
+        method: EHttpMethods.GET,
+        schema: {
+            cookies: userCookiesSchema
+        },
+        preValidation: [fastify.authenticate],
+        errorHandler,
+        handler: async (req: FastifyRequest, reply: FastifyReply) => {
+
+            const { userId } = req.user as ITokenPayload
+
+            const user = (await User.findOne({ email: userId }))?.toObject()
+
+            if (!user) {
+                return reply
+                    .status(401)
+                    .send({ error: 'Invalid user' })
+            }
+
+            const { name, email, role } = user
+
+            return { user: {
+                name,
+                email,
+                role
+            }}
         }
     })
 }

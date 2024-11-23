@@ -10,10 +10,10 @@ import env from './env'
 import { getLoggerSettings } from './helpers/log.helper'
 class Application {
     protected fastify: FastifyInstance
-    constructor(disableRequestLogging = true /* for test purpose only */) {
+    constructor(disableRequestLogging = false /* for test purpose only */) {
         this.fastify = Fastify({
-            logger: getLoggerSettings(),
-            disableRequestLogging: env.env !== 'production' ? disableRequestLogging : true
+            logger: false, //getLoggerSettings(),
+            /*disableRequestLogging: env.env !== 'production' ? disableRequestLogging : true*/
         }).withTypeProvider<TypeBoxTypeProvider>()
     }
 

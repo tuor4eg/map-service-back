@@ -4,6 +4,7 @@ import { TSchema } from '@sinclair/typebox'
 
 import { ITokenPayload } from '../src/routes/user/user.routes'
 import { TRefreshTokens } from '../src/utils/decorator.utils'
+import { preValidationAsyncHookHandler } from 'fastify'
 
 declare module 'fastify' {
     namespace Fastify {
@@ -31,6 +32,7 @@ declare module 'fastify' {
             deviceUUID: string
         ) => Promise<TRefreshTokens>
         clearToken: (token: string, deviceUUID: string) => Promise<void>
+        authenticate: preValidationAsyncHookHandler
     }
 
     interface FastifySchema {
