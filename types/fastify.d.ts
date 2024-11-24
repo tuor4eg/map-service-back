@@ -1,4 +1,4 @@
-import { FastifyJwtNamespace } from '@fastify/jwt'
+import { JWT } from '@fastify/jwt'
 import { FastifyRedis } from '@fastify/redis'
 import { TSchema } from '@sinclair/typebox'
 
@@ -7,21 +7,9 @@ import { TRefreshTokens } from '../src/utils/decorator.utils'
 import { preValidationAsyncHookHandler } from 'fastify'
 
 declare module 'fastify' {
-    namespace Fastify {
-        enum EHttpMethods {
-            GET = 'GET',
-            POST = 'POST',
-            PUT = 'PUT',
-            DELETE = 'DELETE',
-            PATCH = 'PATCH',
-            OPTIONS = 'OPTIONS',
-            HEAD = 'HEAD'
-        }
-    }
-
-    interface FastifyInstance
-        extends FastifyJwtNamespace<{ namespace: 'security' }>,
-            FastifyRedis {
+    interface FastifyInstance {
+        jwt: JWT
+        redis: FastifyRedis
         generateAccessToken: (payload: ITokenPayload) => string
         generateRefreshToken: (
             payload: ITokenPayload,

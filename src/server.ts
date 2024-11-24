@@ -12,8 +12,8 @@ class Application {
     protected fastify: FastifyInstance
     constructor(disableRequestLogging = false /* for test purpose only */) {
         this.fastify = Fastify({
-            logger: false, //getLoggerSettings(),
-            /*disableRequestLogging: env.env !== 'production' ? disableRequestLogging : true*/
+            logger: getLoggerSettings(),
+            disableRequestLogging: env.env !== 'production' ? disableRequestLogging : true
         }).withTypeProvider<TypeBoxTypeProvider>()
     }
 
@@ -27,7 +27,7 @@ class Application {
         try {
             await this.init()
 
-            await this.fastify.listen({ port: env.port })
+            await this.fastify.listen({ port: env.port, host: '0.0.0.0' })
 
             this.fastify.log.info(
                 `Server is running on ${env.host}:${env.port}`

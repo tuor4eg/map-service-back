@@ -59,7 +59,7 @@ export default async (fastify: FastifyInstance) => {
             )
 
             return refreshToken
-        }
+        } as any
     )
 
     fastify.decorate(
@@ -86,8 +86,8 @@ export default async (fastify: FastifyInstance) => {
             const refreshToken = this.generateRefreshToken(tokenPayload, deviceUUID)
 
             return { accessToken, refreshToken }
-        }
-    ) as any
+        } as any
+    )
 
     fastify.decorate(
         'clearToken',
@@ -108,6 +108,6 @@ export default async (fastify: FastifyInstance) => {
                 throw new Error(`Invalid or expired token`)
 
             await this.redis.del(getKey)
-        }
-    ) as any
+        } as any
+    )
 }

@@ -22,7 +22,7 @@ export default async (fastify: any) => {
     fastify.register(cookie)
 
     fastify.register(fastifyCors, {
-        origin: env.api.frontURL,
+        origin: env.env !== 'production' ? true : env.api.frontURL,
         credentials: true
     })
 
