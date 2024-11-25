@@ -1,8 +1,8 @@
 {
-  "name": "map-service-back",
+  "name": "lams-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Back-end for LAMS",
+  "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",

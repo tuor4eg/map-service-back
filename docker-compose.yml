@@ -9,4 +9,5 @@ services:
     ports:
       - "${PORT}:3001"
     container_name: lams-backend
+    image: lams-backend-image
     restart: always
