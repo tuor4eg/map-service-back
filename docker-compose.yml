@@ -7,7 +7,7 @@ services:
     env_file:
       - .env
     ports:
-      - "${PORT}:3001"
+      - "${PORT}:${PORT}"
     container_name: lams-backend
     image: lams-backend-image
     restart: always
