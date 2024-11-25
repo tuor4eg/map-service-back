@@ -29,7 +29,7 @@ jobs:
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
         source: "./docker-compose.yml"
-        target: "/home/root/lams-backend/docker-compose.yml"
+        target: "/home/root/lams-backend/"
         overwrite: true
 
     - name: Deploy using docker-compose
