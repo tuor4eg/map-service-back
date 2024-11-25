@@ -9,7 +9,7 @@ services:
     ports:
       - "${PORT}:${PORT}"
     container_name: lams-backend
-    image: ${{ secrets.DOCKER_USERNAME }}/lams-backend:latest
+    image: ${DOCKER_USERNAME}/lams-backend:latest
     restart: always
     depends_on:
       - mongodb
