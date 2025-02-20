@@ -11,7 +11,9 @@ import {
     userCookiesSchema,
     TUserCookies,
     loginCookiesSchema,
-    TLoginCookies
+    TLoginCookies,
+    updateUserBodySchema,
+    TUpdateUserBody
 } from '../../schemas/user.schema'
 import { EHttpMethods } from '../../types/fastify.types'
 import { errorHandler } from '../../utils/handler.utils'
@@ -47,7 +49,6 @@ async function userRoutes(fastify: FastifyInstance) {
                     .send({ error: 'Invalid email or password' })
             }
 
-            // Verify password
             const isPasswordValid = await bcrypt.compare(
                 password,
                 user.password
@@ -91,7 +92,9 @@ async function userRoutes(fastify: FastifyInstance) {
                     user: {
                         email: user.email,
                         name: user.name,
-                        role: user.role
+                        role: user.role,
+                        id: user._id!.toString(),
+                        settings: user.settings
                     }
                 })
         }
@@ -158,15 +161,20 @@ async function userRoutes(fastify: FastifyInstance) {
         url: '/info',
         method: EHttpMethods.GET,
         schema: {
-            cookies: userCookiesSchema
+            cookies: userCookiesSchema,
+            response: {
+                200: loginResponseSchema
+            }
         },
         preValidation: [fastify.authenticate],
         errorHandler,
         handler: async (req: FastifyRequest, reply: FastifyReply) => {
 
             const { userId } = req.user as ITokenPayload
+            console.log(userId)
 
             const user = (await User.findOne({ email: userId }))?.toObject()
+            console.log(user)
 
             if (!user) {
                 return reply
@@ -174,13 +182,62 @@ async function userRoutes(fastify: FastifyInstance) {
                     .send({ error: 'Invalid user' })
             }
 
-            const { name, email, role } = user
+            const { name, email, role, _id, settings } = user
 
             return { user: {
                 name,
                 email,
-                role
+                role,
+                id: _id!.toString(),
+                settings
             }}
+        }
+    })
+
+    fastify.route({
+        url: '/update',
+        method: EHttpMethods.POST,
+        schema: {
+            body: updateUserBodySchema,
+            cookies: userCookiesSchema,
+            response: {
+                200: loginResponseSchema
+            }
+        },
+        preValidation: [fastify.authenticate],
+        errorHandler,
+        handler: async (
+            req: FastifyRequest<{ Body: TUpdateUserBody }>,
+            reply: FastifyReply
+        ) => {
+            const { userId } = req.user as ITokenPayload
+            const updateData = req.body
+
+            if (updateData.password) {
+                updateData.password = await bcrypt.hash(updateData.password, 10)
+            }
+
+            const user = (await User.findOneAndUpdate(
+                { email: userId },
+                { $set: updateData },
+                { new: true }
+            ))?.toObject()
+
+            if (!user) {
+                return reply
+                    .status(404)
+                    .send({ error: 'User not found' })
+            }
+
+            return {
+                user: {
+                    email: user.email,
+                    name: user.name,
+                    role: user.role,
+                    id: user._id!.toString(),
+                    settings: user.settings
+                }
+            }
         }
     })
 }

@@ -9,6 +9,9 @@ install: env-production
 install-dev: env
 	@npm i -S -D --legacy-peer-deps
 
+dev:
+	@npm run dev
+
 docker-build:
 	@docker-compose build
 
