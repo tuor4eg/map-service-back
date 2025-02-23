@@ -1,6 +1,36 @@
 import mongoose, { Schema, Document, Model, Types } from 'mongoose'
 import { IUser } from './user.model'
 import { EUserRoles } from '../types/user.types'
+
+enum ECameraAccessType {
+    BASIC_AUTH = 'basic_auth'
+}
+
+enum EContactType {
+    PHONE = 'phone',
+    EMAIL = 'email',
+    TELEGRAM = 'telegram',
+    WHATSAPP = 'whatsapp',
+    VIBER = 'viber'
+}
+
+interface ICameraAccessCredentials {
+    [ECameraAccessType.BASIC_AUTH]: {
+        login: string
+        password: string
+    }
+}
+
+interface IContactAccount {
+    type: EContactType
+    value: string
+}
+
+interface IOwnerContact {
+    name: string
+    accounts: IContactAccount[]
+}
+
 export interface ICameraLocation extends Document {
     title: string
     coordinates: [number, number]
@@ -9,6 +39,11 @@ export interface ICameraLocation extends Document {
     allowedUsers: Types.ObjectId[]
     allowedRoles: EUserRoles[]
     url: string
+    access?: {
+        type: ECameraAccessType
+        credentials: ICameraAccessCredentials[ECameraAccessType]
+    }
+    ownerContact?: IOwnerContact
 }
 
 interface ICameraModel extends Model<ICameraLocation> {
@@ -24,7 +59,18 @@ const schema: Schema = new Schema(
         ownerId: { type: Types.ObjectId, required: true, ref: 'User' },
         allowedUsers: [{ type: Types.ObjectId, ref: 'User' }],
         allowedRoles: [{ type: String, enum: Object.values(EUserRoles) }],
-        url: { type: String, default: '' }
+        url: { type: String, default: '' },
+        access: {
+            type: { type: String, enum: Object.values(ECameraAccessType) },
+            credentials: { type: Map, of: String }
+        },
+        ownerContact: {
+            name: { type: String },
+            accounts: [{
+                type: { type: String, enum: Object.values(EContactType) },
+                value: { type: String }
+            }]
+        }
     },
     { collection: 'cameraLocations', timestamps: true }
 )
@@ -34,8 +80,12 @@ schema.statics.getCluster = async function () {
         {
             $project: {
                 _id: 1,
-                coordinates: 1
+                coordinates: 1,
+                title: 1
             }
+        },
+        {
+            $sort: { title: 1 as 1 }
         }
     ]
     const results = await this.aggregate(pipeline)
@@ -52,6 +102,9 @@ schema.statics.getListByUser = async function(user: IUser) {
                     coordinates: 1,
                     _id: 1
                 }
+            },
+            {
+                $sort: { title: 1 as 1 }
             }
         ]
         return await this.aggregate(pipeline)
@@ -73,6 +126,9 @@ schema.statics.getListByUser = async function(user: IUser) {
                 coordinates: 1,
                 _id: 1
             }
+        },
+        {
+            $sort: { title: 1 as 1 }
         }
     ]
     return await this.aggregate(pipeline)
