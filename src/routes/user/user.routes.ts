@@ -76,14 +76,14 @@ async function userRoutes(fastify: FastifyInstance) {
             return reply
                 .setCookie('accessToken', accessToken, {
                     httpOnly: false,
-                    secure: env.env === 'production',
+                    secure: true,
                     sameSite: 'none',
                     path: '/',
                     maxAge: ms(env.jwt.expired)
                 })
                 .setCookie('refreshToken', refreshToken, {
                     httpOnly: false,
-                    secure: env.env === 'production',
+                    secure: true,
                     sameSite: 'none',
                     path: '/',
                     maxAge: ms(env.jwt.refreshExpired)

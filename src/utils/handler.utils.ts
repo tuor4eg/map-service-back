@@ -5,6 +5,7 @@ export const errorHandler = async (
     request: FastifyRequest,
     reply: FastifyReply
 ) => {
+    console.log(error)
     reply.status(error.statusCode || 500).send({
         status: error.statusCode || 500,
         error: error.message
