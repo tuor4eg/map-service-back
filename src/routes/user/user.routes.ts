@@ -79,14 +79,16 @@ async function userRoutes(fastify: FastifyInstance) {
                     secure: true,
                     sameSite: 'none',
                     path: '/',
-                    maxAge: ms(env.jwt.expired)
+                    maxAge: ms(env.jwt.expired),
+                    domain: env.api.domain
                 })
                 .setCookie('refreshToken', refreshToken, {
                     httpOnly: false,
                     secure: true,
                     sameSite: 'none',
                     path: '/',
-                    maxAge: ms(env.jwt.refreshExpired)
+                    maxAge: ms(env.jwt.refreshExpired),
+                    domain: env.api.domain
                 })
                 .send({
                     user: {
@@ -121,17 +123,19 @@ async function userRoutes(fastify: FastifyInstance) {
             return reply
                 .setCookie('accessToken', accessToken, {
                     httpOnly: false,
-                    secure: env.env === 'production',
+                    secure: true,
                     sameSite: 'none',
                     path: '/',
-                    maxAge: ms(env.jwt.expired)
+                    maxAge: ms(env.jwt.expired),
+                    domain: env.api.domain
                 })
                 .setCookie('refreshToken', refreshToken, {
                     httpOnly: false,
-                    secure: env.env === 'production',
+                    secure: true,
                     sameSite: 'none',
                     path: '/',
-                    maxAge: ms(env.jwt.refreshExpired)
+                    maxAge: ms(env.jwt.refreshExpired),
+                    domain: env.api.domain
                 })
                 .send({
                     message: 'Token refreshed'
@@ -171,10 +175,8 @@ async function userRoutes(fastify: FastifyInstance) {
         handler: async (req: FastifyRequest, reply: FastifyReply) => {
 
             const { userId } = req.user as ITokenPayload
-            console.log(userId)
 
             const user = (await User.findOne({ email: userId }))?.toObject()
-            console.log(user)
 
             if (!user) {
                 return reply

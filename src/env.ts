@@ -14,7 +14,7 @@ const JWT_EXPIRED = getEnv('JWT_EXPIRED', '1h') as string
 const JWT_REFRESH_EXPIRED = getEnv('JWT_REFRESH_EXPIRED', '7d') as string
 
 const FRONT_URL = getEnv('FRONT_URL', 'http://localhost:3000') as string
-
+const DOMAIN = getEnv('DOMAIN', 'localhost') as string
 const MONGO_URI = getEnv(
     'MONGO_URI',
     'mongodb://172.17.0.1:27017/map-service-db'
@@ -40,7 +40,8 @@ export default {
         refreshExpired: JWT_REFRESH_EXPIRED
     },
     api: {
-        frontURL: FRONT_URL
+        frontURL: FRONT_URL,
+        domain: DOMAIN
     },
     mongo: {
         uri: MONGO_URI
