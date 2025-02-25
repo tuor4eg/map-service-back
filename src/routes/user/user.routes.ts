@@ -77,14 +77,14 @@ async function userRoutes(fastify: FastifyInstance) {
                 .setCookie('accessToken', accessToken, {
                     httpOnly: false,
                     secure: env.env === 'production',
-                    sameSite: 'lax',
+                    sameSite: 'none',
                     path: '/',
                     maxAge: ms(env.jwt.expired)
                 })
                 .setCookie('refreshToken', refreshToken, {
                     httpOnly: false,
                     secure: env.env === 'production',
-                    sameSite: 'lax',
+                    sameSite: 'none',
                     path: '/',
                     maxAge: ms(env.jwt.refreshExpired)
                 })
@@ -122,14 +122,14 @@ async function userRoutes(fastify: FastifyInstance) {
                 .setCookie('accessToken', accessToken, {
                     httpOnly: false,
                     secure: env.env === 'production',
-                    sameSite: 'lax',
+                    sameSite: 'none',
                     path: '/',
                     maxAge: ms(env.jwt.expired)
                 })
                 .setCookie('refreshToken', refreshToken, {
                     httpOnly: false,
                     secure: env.env === 'production',
-                    sameSite: 'lax',
+                    sameSite: 'none',
                     path: '/',
                     maxAge: ms(env.jwt.refreshExpired)
                 })
