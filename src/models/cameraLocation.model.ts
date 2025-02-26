@@ -55,6 +55,7 @@ const schema: Schema = new Schema(
     {
         title: { type: String, default: '' },
         coordinates: { type: Array, required: true, index: '2dsphere' },
+        address: { type: String, default: '' },
         description: { type: String, default: '' },
         ownerId: { type: Types.ObjectId, required: true, ref: 'User' },
         allowedUsers: [{ type: Types.ObjectId, ref: 'User' }],
@@ -81,7 +82,8 @@ schema.statics.getCluster = async function () {
             $project: {
                 _id: 1,
                 coordinates: 1,
-                title: 1
+                title: 1,
+                address: 1
             }
         },
         {
@@ -100,7 +102,8 @@ schema.statics.getListByUser = async function(user: IUser) {
                 $project: {
                     title: 1,
                     coordinates: 1,
-                    _id: 1
+                    _id: 1,
+                    address: 1
                 }
             },
             {
