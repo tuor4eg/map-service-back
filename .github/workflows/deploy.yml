@@ -45,6 +45,19 @@ jobs:
             sudo chmod +x /usr/local/bin/docker-compose
           fi
           cd /opt/lams/lams-back
+
+          # Очищаем только старые образы бэкенда
+          # Находим ID образа текущего бэкенда
+          CURRENT_BACKEND_IMAGE=$(docker images ${{ secrets.DOCKER_USERNAME }}/lams-backend:latest -q)
+          
+          # Удаляем только старые образы бэкенда, сохраняя текущий
+          if [ ! -z "$CURRENT_BACKEND_IMAGE" ]; then
+            docker images | grep "${{ secrets.DOCKER_USERNAME }}/lams-backend" | grep -v "$CURRENT_BACKEND_IMAGE" | awk '{print $3}' | xargs -r docker rmi
+          fi
+          
+          # Удаляем только dangling образы (без тегов)
+          docker image prune -f
+
           docker-compose pull
           docker-compose up -d
 
