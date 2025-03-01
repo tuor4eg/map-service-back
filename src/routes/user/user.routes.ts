@@ -1,28 +1,28 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
-import bcrypt from 'bcrypt'
 import ms from 'ms'
-
-import env from '../../env'
-import User from '../../models/user.model'
 import {
     loginBodySchema,
     loginResponseSchema,
-    TLoginBody,
     userCookiesSchema,
-    TUserCookies,
     loginCookiesSchema,
-    TLoginCookies,
     updateUserBodySchema,
+    TLoginBody,
+    TLoginCookies,
+    TUserCookies,
     TUpdateUserBody
 } from '../../schemas/user.schema'
 import { EHttpMethods } from '../../types/fastify.types'
 import { errorHandler } from '../../utils/handler.utils'
+import { UserController } from '../../controllers/user.controller'
+import env from '../../env'
 
 export interface ITokenPayload {
     userId: string
 }
 
 async function userRoutes(fastify: FastifyInstance) {
+    const userController = new UserController()
+
     fastify.route({
         url: '/login',
         method: EHttpMethods.POST,
@@ -39,39 +39,13 @@ async function userRoutes(fastify: FastifyInstance) {
             reply: FastifyReply
         ) => {
             const { email, password } = req.body
-
-            // Find user by email
-            const user = (await User.findOne({ email }))?.toObject()
-
-            if (!user) {
-                return reply
-                    .status(401)
-                    .send({ error: 'Invalid email or password' })
-            }
-
-            const isPasswordValid = await bcrypt.compare(
-                password,
-                user.password
-            )
-
-            if (!isPasswordValid) {
-                return reply
-                    .status(401)
-                    .send({ error: 'Invalid email or password' })
-            }
-
-            const payload = {
-                userId: user.email
-            }
-
+            const user = await userController.validateUser(email, password)
+            
+            const payload = { userId: user._id.toString() }
             const { deviceUUID } = req.cookies as TLoginCookies
 
-            // Create JWT using fastify's built-in jwt.sign method
             const accessToken = fastify.generateAccessToken(payload)
-            const refreshToken = fastify.generateRefreshToken(
-                payload,
-                deviceUUID
-            )
+            const refreshToken = fastify.generateRefreshToken(payload, deviceUUID)
 
             return reply
                 .setCookie('accessToken', accessToken, {
@@ -90,15 +64,7 @@ async function userRoutes(fastify: FastifyInstance) {
                     maxAge: ms(env.jwt.refreshExpired),
                     domain: env.api.domain
                 })
-                .send({
-                    user: {
-                        email: user.email,
-                        name: user.name,
-                        role: user.role,
-                        id: user._id!.toString(),
-                        settings: user.settings
-                    }
-                })
+                .send({ user: userController.formatResponseUser(user) })
         }
     })
 
@@ -113,15 +79,13 @@ async function userRoutes(fastify: FastifyInstance) {
             req: FastifyRequest<{ Cookies: TUserCookies }>,
             reply: FastifyReply
         ) => {
-            const cookies = req.cookies as TUserCookies
+            const { refreshToken, deviceUUID } = req.cookies as TUserCookies
 
-            const { accessToken, refreshToken } = await fastify.refreshTokens(
-                cookies.refreshToken,
-                cookies.deviceUUID
-            )
+            const { accessToken: newAccessToken, refreshToken: newRefreshToken } = 
+                await fastify.refreshTokens(refreshToken, deviceUUID)
 
             return reply
-                .setCookie('accessToken', accessToken, {
+                .setCookie('accessToken', newAccessToken, {
                     httpOnly: false,
                     secure: true,
                     sameSite: 'none',
@@ -129,7 +93,7 @@ async function userRoutes(fastify: FastifyInstance) {
                     maxAge: ms(env.jwt.expired),
                     domain: env.api.domain
                 })
-                .setCookie('refreshToken', refreshToken, {
+                .setCookie('refreshToken', newRefreshToken, {
                     httpOnly: false,
                     secure: true,
                     sameSite: 'none',
@@ -137,9 +101,7 @@ async function userRoutes(fastify: FastifyInstance) {
                     maxAge: ms(env.jwt.refreshExpired),
                     domain: env.api.domain
                 })
-                .send({
-                    message: 'Token refreshed'
-                })
+                .send({ message: 'Token refreshed' })
         }
     })
 
@@ -150,14 +112,14 @@ async function userRoutes(fastify: FastifyInstance) {
             cookies: userCookiesSchema
         },
         errorHandler,
-        handler: async (req: FastifyRequest, reply: FastifyReply) => {
+        handler: async (
+            req: FastifyRequest<{ Cookies: TUserCookies }>,
+            reply: FastifyReply
+        ) => {
             const { refreshToken, deviceUUID } = req.cookies as TUserCookies
-
             await fastify.clearToken(refreshToken, deviceUUID)
 
-            return {
-                message: 'Successfully logged out'
-            }
+            reply.status(200).send({ message: 'Successfully logged out' })
         }
     })
 
@@ -173,26 +135,10 @@ async function userRoutes(fastify: FastifyInstance) {
         preValidation: [fastify.authenticate],
         errorHandler,
         handler: async (req: FastifyRequest, reply: FastifyReply) => {
-
             const { userId } = req.user as ITokenPayload
+            const user = await userController.getUserById(userId)
 
-            const user = (await User.findOne({ email: userId }))?.toObject()
-
-            if (!user) {
-                return reply
-                    .status(401)
-                    .send({ error: 'Invalid user' })
-            }
-
-            const { name, email, role, _id, settings } = user
-
-            return { user: {
-                name,
-                email,
-                role,
-                id: _id!.toString(),
-                settings
-            }}
+            reply.status(200).send({ user: userController.formatResponseUser(user) })
         }
     })
 
@@ -213,33 +159,9 @@ async function userRoutes(fastify: FastifyInstance) {
             reply: FastifyReply
         ) => {
             const { userId } = req.user as ITokenPayload
-            const updateData = req.body
+            const user = await userController.updateUser(userId, req.body)
 
-            if (updateData.password) {
-                updateData.password = await bcrypt.hash(updateData.password, 10)
-            }
-
-            const user = (await User.findOneAndUpdate(
-                { email: userId },
-                { $set: updateData },
-                { new: true }
-            ))?.toObject()
-
-            if (!user) {
-                return reply
-                    .status(404)
-                    .send({ error: 'User not found' })
-            }
-
-            return {
-                user: {
-                    email: user.email,
-                    name: user.name,
-                    role: user.role,
-                    id: user._id!.toString(),
-                    settings: user.settings
-                }
-            }
+            reply.status(200).send({ user: userController.formatResponseUser(user) })
         }
     })
 }

@@ -1,9 +1,10 @@
-import mongoose, { Schema, Document } from 'mongoose'
+import mongoose, { Schema, Document, Types } from 'mongoose'
 import bcrypt from 'bcrypt'
 
 import { EUserRoles } from '../types/user.types'
 
 export interface IUser extends Document {
+    _id: Types.ObjectId,
     name: string,
     email: string
     password: string

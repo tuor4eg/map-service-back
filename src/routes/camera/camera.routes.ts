@@ -1,22 +1,25 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
-import mongoose from 'mongoose'
-
-import CameraLocation from '../../models/cameraLocation.model'
+import { IUser } from '../../models/user.model'
 import { EHttpMethods } from '../../types/fastify.types'
 import { errorHandler } from '../../utils/handler.utils'
-import User from '../../models/user.model'
-const { ObjectId } = mongoose.Types
-
+import { CameraController } from '../../controllers/camera.controller'
+import { UserController } from '../../controllers/user.controller'
+import { ITokenPayload } from '../user/user.routes'
 async function cameraRoutes(fastify: FastifyInstance) {
+    const cameraController = new CameraController()
+    const userController = new UserController()
+
     fastify.route({
         url: '/list',
         method: EHttpMethods.GET,
         preValidation: [fastify.authenticate],
         errorHandler,
         handler: async (req: FastifyRequest, reply: FastifyReply) => {
-            const cameras = await CameraLocation.getCluster()
+            const { userId } = req.user as ITokenPayload
+            const user = await userController.getUserById(userId)
+            const cameras = await cameraController.getCamerasByUser(user)
 
-            return reply.send({ cameras })
+            reply.status(200).send({ cameras })
         }
     })
 
@@ -30,16 +33,12 @@ async function cameraRoutes(fastify: FastifyInstance) {
                 id: string
             }
         }>, reply: FastifyReply) => {
+            const { userId } = req.user as { userId: string }
+            const user = await userController.getUserById(userId)
             const { id } = req.params
-            const camera = await CameraLocation.findOne({ _id: id })
-
-            if (!camera) {
-                return reply.code(404).send({
-                    message: 'Camera not found'
-                })
-            }
+            const camera = await cameraController.getCameraById(id)
             
-            return reply.send({ camera })
+            reply.status(200).send({ camera })
         }
     })
 
@@ -54,17 +53,10 @@ async function cameraRoutes(fastify: FastifyInstance) {
             }
         }>, reply: FastifyReply) => {
             const { id } = req.params
-            
-            const user = await User.findOne({ _id: id })
+            const user = await userController.getUserById(id)
+            const cameras = await cameraController.getCamerasByUser(user)
 
-            if (!user) {
-                return reply.code(404).send({
-                    message: 'User not found'
-                })
-            }
-            const cameras = await CameraLocation.getListByUser(user)
-
-            return reply.send({ cameras })
+            reply.status(200).send({ cameras })
         }
     })
 
@@ -79,36 +71,20 @@ async function cameraRoutes(fastify: FastifyInstance) {
                 [key: string]: any
             }
         }>, reply: FastifyReply) => {
-            const { _id, ...updateData } = req.body
-
+            const { userId } = req.user as { userId: string }
+            const user = await userController.getUserByEmail(userId)
+            const { id, ...updateData } = req.body
             
-            if (!_id) {
-                return reply.code(400).send({
-                    message: 'Camera ID is required'
-                })
+            if (!id) {
+                reply.status(400).send({ error: 'Camera ID is required' })
+                return
             }
 
-            const camera = await CameraLocation.findOne({ _id })
-
-            if (!camera) {
-                return reply.code(404).send({
-                    message: 'Camera not found'
-                })
-            }
-
-            // Remove id from update data to prevent _id modification attempt
-            delete updateData._id
-
-            // Update only the fields that were provided
-            const updatedCamera = await CameraLocation.findByIdAndUpdate(
-                _id,
-                { $set: updateData },
-                { new: true }
-            )
-
-            return reply.send({ 
+            const camera = await cameraController.updateCamera(id, updateData)
+            
+            reply.status(200).send({ 
                 message: 'Camera updated successfully',
-                camera: updatedCamera 
+                camera
             })
         }
     })

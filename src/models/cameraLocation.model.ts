@@ -32,6 +32,7 @@ interface IOwnerContact {
 }
 
 export interface ICameraLocation extends Document {
+    _id: Types.ObjectId
     title: string
     coordinates: [number, number]
     description: string
@@ -43,12 +44,13 @@ export interface ICameraLocation extends Document {
         type: ECameraAccessType
         credentials: ICameraAccessCredentials[ECameraAccessType]
     }
-    ownerContact?: IOwnerContact
+    ownerContact?: IOwnerContact,
+    address: string
 }
 
 interface ICameraModel extends Model<ICameraLocation> {
     getCluster(): Promise<Array<ICameraLocation>>
-    getListByUser(user: IUser): Promise<Array<Pick<ICameraLocation, 'title' | 'coordinates'>>>
+    getListByUser(user: IUser): Promise<Array<Pick<ICameraLocation, 'title' | 'coordinates' | 'address' | '_id'>>>
 }
 
 const schema: Schema = new Schema(
