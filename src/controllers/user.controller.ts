@@ -16,7 +16,7 @@ export class UserError extends Error {
 
 export class UserController {
     async validateUser(email: string, password: string): Promise<IUser> {
-        const user = await User.getUser('email', email)
+        const user = (await User.findOne({ email }))?.toObject()
 
         if (!user) {
             throw new UserError(userErrors.invalidEmailOrPassword.errorCode, userErrors.invalidEmailOrPassword.message)
@@ -27,6 +27,8 @@ export class UserController {
         if (!isPasswordValid) {
             throw new UserError(userErrors.invalidEmailOrPassword.errorCode, userErrors.invalidEmailOrPassword.message)
         }
+
+        user.password = ''
 
         return user
     }
