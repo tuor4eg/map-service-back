@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Types } from 'mongoose'
+import mongoose, { Schema, Document, Types, Model } from 'mongoose'
 import bcrypt from 'bcrypt'
 
 import { EUserRoles } from '../types/user.types'
@@ -12,6 +12,14 @@ export interface IUser extends Document {
     settings: {
         language: string
     }
+    accounts: {
+        telegramId: number
+        phone: string
+    }
+}
+
+interface IUserModel extends Model<IUser> {
+    getUser(field: string, value: string): Promise<IUser | null>
 }
 
 const UserSchema: Schema = new Schema({
@@ -21,8 +29,24 @@ const UserSchema: Schema = new Schema({
     role: { type: String, default: EUserRoles.USER, enum: EUserRoles },
     settings: {
         language: { type: String }
+    },
+    accounts: {
+        telegramId: { type: Number },
+        phone: { type: String }
     }
 }, { collection: 'users', timestamps: true })
+
+UserSchema.statics.getUser = async function(field: string, value: string): Promise<IUser | null> {
+    const user = (await this.findOne({ [field]: value }))?.toObject()
+
+    if (!user) {
+        return null
+    }
+
+    delete user.password
+
+    return user
+}
 
 
 UserSchema.pre('save', async function(this: IUser, next) {
@@ -46,4 +70,4 @@ UserSchema.pre('save', async function(this: IUser, next) {
     }
 });
 
-export default mongoose.model<IUser>('User', UserSchema)
+export default mongoose.model<IUser, IUserModel>('User', UserSchema)

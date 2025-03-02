@@ -12,18 +12,32 @@ export const loginBodySchema = Type.Object(
     }
 )
 
+const optionsUserSchema = {
+    settings: Type.Optional(Type.Object({
+        language: Type.Optional(Type.String())
+    })),
+    accounts: Type.Optional(Type.Object({
+        telegramId: Type.Optional(Type.Number()),
+        phone: Type.Optional(Type.String())
+    }))
+}
+
+const strictUserSchema = {
+    email: Type.String({ format: 'email' }),
+    name: Type.String(),
+    role: Type.Enum(EUserRoles),
+    _id: Type.String()
+}
+
+const optionalUserSchema = {
+    ...Object.fromEntries(Object.keys(strictUserSchema).map(key => [key, Type.Optional(strictUserSchema[key as keyof typeof strictUserSchema])]))
+}
+
 export const loginResponseSchema = Type.Object(
     {
         user: Type.Object({
-            email: Type.String({ format: 'email' }),
-            name: Type.String(),
-            role: Type.Enum(EUserRoles),
-            id: Type.String(),
-            settings: Type.Optional(Type.Object({
-                language: Type.Optional(Type.String())
-            }))
-        }, {
-            additionalProperties: false
+            ...strictUserSchema,
+            ...optionsUserSchema
         })
     },
     {
@@ -42,12 +56,9 @@ export const loginCookiesSchema = Type.Pick(userCookiesSchema, ['deviceUUID'])
 
 export const updateUserBodySchema = Type.Object(
     {
-        name: Type.Optional(Type.String({ minLength: 2 })),
-        email: Type.Optional(Type.String({ format: 'email' })),
-        password: Type.Optional(Type.String({ minLength: 6 })),
-        settings: Type.Optional(Type.Object({
-            language: Type.Optional(Type.String({ minLength: 2 }))
-        }))
+        password: Type.Optional(Type.String()),
+        ...optionalUserSchema,
+        ...optionsUserSchema
     },
     {
         additionalProperties: false

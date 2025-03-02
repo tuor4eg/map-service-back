@@ -24,8 +24,8 @@ export class CameraController {
         return camera
     }
 
-    async getCamerasByUser(user: IUser): Promise<Pick<ICameraLocation, 'title' | 'coordinates' | 'address' | '_id'>[]> {
-        return await CameraLocation.getListByUser(user)
+    async getList(): Promise<Pick<ICameraLocation, 'title' | 'coordinates' | 'address' | '_id'>[]> {
+        return await CameraLocation.getCluster()
     }
 
     async updateCamera(

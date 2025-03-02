@@ -1,9 +1,9 @@
 import bcrypt from 'bcrypt'
 import User, { IUser } from '../models/user.model'
 import errors from '../errors'
+import { TUpdateUserBody } from '../schemas/user.schema'
 
 const { userErrors } = errors
-type IUserResponse = Pick<IUser, 'email' | 'name' | 'role' | 'settings'> & { id: string }
 
 export class UserError extends Error {
     constructor(
@@ -16,7 +16,7 @@ export class UserError extends Error {
 
 export class UserController {
     async validateUser(email: string, password: string): Promise<IUser> {
-        const user = (await User.findOne({ email }))?.toObject()
+        const user = await User.getUser('email', email)
 
         if (!user) {
             throw new UserError(userErrors.invalidEmailOrPassword.errorCode, userErrors.invalidEmailOrPassword.message)
@@ -32,7 +32,7 @@ export class UserController {
     }
 
     async getUserById(id: string): Promise<IUser> {
-        const user = (await User.findOne({ _id: id }))?.toObject()
+        const user = await User.getUser('_id', id)
 
         if (!user) {
             throw new UserError(userErrors.userNotFound.errorCode, userErrors.userNotFound.message)
@@ -42,7 +42,7 @@ export class UserController {
     }
 
     async getUserByEmail(email: string): Promise<IUser> {
-        const user = (await User.findOne({ email }))?.toObject()
+        const user = await User.getUser('email', email)
 
         if (!user) {
             throw new UserError(userErrors.userNotFound.errorCode, userErrors.userNotFound.message)
@@ -51,12 +51,7 @@ export class UserController {
         return user
     }
 
-    async updateUser(_id: string, updateData: {
-        email?: string
-        password?: string
-        name?: string
-        settings?: { language?: string }
-    }): Promise<IUser> {
+    async updateUser(_id: string, updateData: TUpdateUserBody): Promise<IUser> {
         if (updateData.password) {
             updateData.password = await bcrypt.hash(updateData.password, 10)
         }
@@ -74,13 +69,13 @@ export class UserController {
         return user
     }
 
-    formatResponseUser(user: IUser): IUserResponse {
-        return {
-            email: user.email,
-            name: user.name,
-            role: user.role,
-            id: user._id!.toString(),
-            settings: user.settings
+    async getUserByTelegramId(id: string): Promise<IUser> {
+        const user = await User.getUser('accounts.telegram', id)
+
+        if (!user) {
+            throw new UserError(userErrors.userNotFound.errorCode, userErrors.userNotFound.message)
         }
+
+        return user
     }
 } 

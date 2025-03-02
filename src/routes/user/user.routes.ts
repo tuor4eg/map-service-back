@@ -64,7 +64,7 @@ async function userRoutes(fastify: FastifyInstance) {
                     maxAge: ms(env.jwt.refreshExpired),
                     domain: env.api.domain
                 })
-                .send({ user: userController.formatResponseUser(user) })
+                .send({ user })
         }
     })
 
@@ -138,7 +138,7 @@ async function userRoutes(fastify: FastifyInstance) {
             const { userId } = req.user as ITokenPayload
             const user = await userController.getUserById(userId)
 
-            reply.status(200).send({ user: userController.formatResponseUser(user) })
+            reply.status(200).send({ user })
         }
     })
 
@@ -159,9 +159,12 @@ async function userRoutes(fastify: FastifyInstance) {
             reply: FastifyReply
         ) => {
             const { userId } = req.user as ITokenPayload
-            const user = await userController.updateUser(userId, req.body)
 
-            reply.status(200).send({ user: userController.formatResponseUser(user) })
+            const { password, settings, accounts } = req.body
+
+            const user = await userController.updateUser(userId, { password, settings, accounts })
+
+            reply.status(200).send({ user })
         }
     })
 }
