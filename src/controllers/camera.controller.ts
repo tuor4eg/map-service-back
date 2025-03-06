@@ -15,11 +15,13 @@ export class CameraError extends Error {
 
 export class CameraController {
     async getCameraById(id: string): Promise<ICameraLocation> {
-        const camera = await CameraLocation.findOne({ _id: id })
+        const camera = (await CameraLocation.findOne({ _id: id }))?.toObject()
 
         if (!camera) {
             throw new CameraError(cameraErrors.cameraNotFound.errorCode, cameraErrors.cameraNotFound.message)
         }
+
+        camera.coordinates = camera.location.coordinates
 
         return camera
     }
@@ -40,6 +42,9 @@ export class CameraController {
 
         // Remove _id from update data to prevent _id modification attempt
         delete (updateData as any)._id
+        // coordinates and location are not allowed to be updated
+        delete (updateData as any).location
+        delete (updateData as any).coordinates
 
         const updatedCamera = await CameraLocation.findByIdAndUpdate(
             id,

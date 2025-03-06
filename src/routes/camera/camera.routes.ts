@@ -31,7 +31,7 @@ async function cameraRoutes(fastify: FastifyInstance) {
             }
         }>, reply: FastifyReply) => {
             const { userId } = req.user as { userId: string }
-            const user = await userController.getUserById(userId)
+            await userController.getUserById(userId)
             const { id } = req.params
             const camera = await cameraController.getCameraById(id)
             
@@ -51,15 +51,15 @@ async function cameraRoutes(fastify: FastifyInstance) {
             }
         }>, reply: FastifyReply) => {
             const { userId } = req.user as { userId: string }
-            const user = await userController.getUserByEmail(userId)
-            const { id, ...updateData } = req.body
+            await userController.getUserById(userId)
+            const { _id, ...updateData } = req.body
             
-            if (!id) {
+            if (!_id) {
                 reply.status(400).send({ error: 'Camera ID is required' })
                 return
             }
 
-            const camera = await cameraController.updateCamera(id, updateData)
+            const camera = await cameraController.updateCamera(_id, updateData)
             
             reply.status(200).send({ 
                 message: 'Camera updated successfully',

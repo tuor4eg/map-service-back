@@ -34,7 +34,10 @@ interface IOwnerContact {
 export interface ICameraLocation extends Document {
     _id: Types.ObjectId
     title: string
-    coordinates: [number, number]
+    location: {
+        type: string,
+        coordinates: [number, number],
+    }
     description: string
     ownerId: Types.ObjectId
     allowedUsers: Types.ObjectId[]
@@ -45,18 +48,22 @@ export interface ICameraLocation extends Document {
         credentials: ICameraAccessCredentials[ECameraAccessType]
     }
     ownerContact?: IOwnerContact,
-    address: string
+    address?: string,
+    coordinates?: [number, number]
 }
 
 interface ICameraModel extends Model<ICameraLocation> {
     getCluster(): Promise<Array<ICameraLocation>>
-    getListByUser(user: IUser): Promise<Array<Pick<ICameraLocation, 'title' | 'coordinates' | 'address' | '_id'>>>
+    getListByUser(user: IUser): Promise<Array<Pick<ICameraLocation, 'title' | 'location' | 'address' | '_id'>>>
 }
 
 const schema: Schema = new Schema(
     {
         title: { type: String, default: '' },
-        coordinates: { type: Array, required: true, index: '2dsphere' },
+        location: { 
+            type: { type: String, enum: ['Point'], required: true },
+            coordinates: { type: [Number], required: true },
+        },
         address: { type: String, default: '' },
         description: { type: String, default: '' },
         ownerId: { type: Types.ObjectId, required: true, ref: 'User' },
@@ -78,12 +85,14 @@ const schema: Schema = new Schema(
     { collection: 'cameraLocations', timestamps: true }
 )
 
+schema.index({ coordinates: '2dsphere' })
+
 schema.statics.getCluster = async function () {
     const pipeline = [
         {
             $project: {
                 _id: 1,
-                coordinates: 1,
+                coordinates: '$location.coordinates',
                 title: 1,
                 address: 1
             }
@@ -103,7 +112,7 @@ schema.statics.getListByUser = async function(user: IUser) {
             {
                 $project: {
                     title: 1,
-                    coordinates: 1,
+                    coordinates: '$location.coordinates',
                     _id: 1,
                     address: 1
                 }
@@ -128,7 +137,7 @@ schema.statics.getListByUser = async function(user: IUser) {
         {
             $project: {
                 title: 1,
-                coordinates: 1,
+                coordinates: '$location.coordinates',
                 _id: 1
             }
         },

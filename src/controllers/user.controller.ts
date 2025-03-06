@@ -72,7 +72,7 @@ export class UserController {
     }
 
     async getUserByTelegramId(id: string): Promise<IUser> {
-        const user = await User.getUser('accounts.telegram', id)
+        const user = await User.getUser('accounts.telegramId', id)
 
         if (!user) {
             throw new UserError(userErrors.userNotFound.errorCode, userErrors.userNotFound.message)

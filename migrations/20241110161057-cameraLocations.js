@@ -1,5 +1,3 @@
-const { access } = require('fs')
-
 module.exports = {
     async up(db, client) {
         const ObjectId = require('mongoose').Types.ObjectId
@@ -3035,10 +3033,19 @@ module.exports = {
             }
         ]
 
-        await db.collection('cameraLocations').insertMany(cameras)
+        await db.collection('cameraLocations').insertMany(cameras.map(cam => {
+            const { coordinates, ...rest } = cam
+            return {
+                ...rest,
+                location: {
+                    type: 'Point',
+                    coordinates: [coordinates[1], coordinates[0]]
+                }
+            }
+        }))
     },
 
     async down(db, client) {
-        await db.collection('cameraLocations').deleteMany({})
+        await db.collection('cameraLocations').drop()
     }
 }

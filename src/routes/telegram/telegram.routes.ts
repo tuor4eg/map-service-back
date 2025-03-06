@@ -32,7 +32,7 @@ async function telegramRoutes(fastify: FastifyInstance) {
     })
 
     fastify.route({
-        url: '/user/:id ',
+        url: '/user/:id',
         method: EHttpMethods.GET,
         errorHandler,
         handler: async (req: FastifyRequest<{
